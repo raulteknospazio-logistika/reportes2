@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard de Entregas — Reporte Consolidado</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface2: #f7f8fa;
+  --border: #e2e5ea;
+  --text: #1a1d23;
+  --text2: #5c6370;
+  --text3: #9399a3;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --red: #dc2626;
+  --red-light: #fee2e2;
+  --navy: #1e3a5f;
+  --navy-light: #e8edf5;
+  --tab-active: #1e3a5f;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d24;
+    --surface2: #22252e;
+    --border: #2e3240;
+    --text: #e8eaf0;
+    --text2: #9399a3;
+    --text3: #5c6370;
+    --accent-light: #1e3557;
+    --green-light: #0f2e1a;
+    --amber-light: #2e1f08;
+    --red-light: #2e0f0f;
+    --navy-light: #111827;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
+body { min-height: 100vh; }
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--navy);
+  color: #fff;
+  padding: 20px 32px 0;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.header-top h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+.header-sub { font-size: .78rem; color: rgba(255,255,255,.55); margin-top: 2px; }
+.period-badge { font-size: .72rem; background: rgba(255,255,255,.12); border-radius: 20px; padding: 3px 10px; color: rgba(255,255,255,.8); white-space: nowrap; margin-top: 4px; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 2px; margin-top: 16px; }
+.tab { padding: 9px 18px; font-size: .82rem; font-weight: 500; color: rgba(255,255,255,.55); cursor: pointer; border-radius: 6px 6px 0 0; border: none; background: none; transition: color .15s, background .15s; white-space: nowrap; }
+.tab:hover { color: rgba(255,255,255,.85); background: rgba(255,255,255,.07); }
+.tab.active { background: var(--bg); color: var(--navy); font-weight: 600; }
+
+/* ── MAIN ── */
+.main { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+.dashboard { display: none; }
+.dashboard.active { display: block; }
+
+/* ── SECTION TITLE ── */
+.dash-title { font-size: .7rem; font-weight: 600; color: var(--text3); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 20px; }
+.dash-title span { color: var(--text2); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: .78rem; }
+
+/* ── KPI GRID ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 32px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.kpi-label { font-size: .72rem; color: var(--text2); margin-bottom: 8px; }
+.kpi-value { font-size: 2rem; font-weight: 300; color: var(--text); line-height: 1; letter-spacing: -.03em; }
+.kpi-value sup { font-size: .9rem; font-weight: 500; margin-left: 1px; }
+.kpi-sub { font-size: .74rem; color: var(--text3); margin-top: 6px; }
+.kpi-sub strong { color: var(--green); font-weight: 600; }
+.kpi-sub.amber strong { color: var(--amber); }
+.kpi-sub.accent strong { color: var(--accent); }
+.kpi-accent { border-left: 3px solid var(--accent); }
+.kpi-green { border-left: 3px solid var(--green); }
+.kpi-amber { border-left: 3px solid var(--amber); }
+.kpi-navy { border-left: 3px solid var(--navy); }
+
+/* ── TABLES ── */
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+.section-header { padding: 16px 22px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; }
+.section-title { font-size: .88rem; font-weight: 600; color: var(--text); }
+.section-count { font-size: .74rem; color: var(--text3); font-family: 'DM Mono', monospace; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+thead th { background: var(--surface2); padding: 9px 14px; text-align: left; font-weight: 600; font-size: .72rem; color: var(--text2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+.mono { font-family: 'DM Mono', monospace; font-size: .78rem; }
+
+/* ── BADGES ── */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: .7rem; font-weight: 600; }
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.badge-green { background: var(--green-light); color: var(--green); }
+.badge-amber { background: var(--amber-light); color: var(--amber); }
+.badge-red { background: var(--red-light); color: var(--red); }
+.badge-blue { background: var(--accent-light); color: var(--accent); }
+.badge-navy { background: var(--navy-light); color: var(--navy); }
+
+/* ── BAR ── */
+.bar-track { background: var(--border); border-radius: 4px; height: 6px; min-width: 80px; }
+.bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+.bar-fill-green { background: var(--green); }
+.bar-fill-navy { background: var(--navy); }
+
+/* ── PCT CELL ── */
+.pct { font-family: 'DM Mono', monospace; font-size: .78rem; color: var(--text2); }
+
+/* ── TWO COL ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width: 720px){ .two-col { grid-template-columns: 1fr; } .tabs { overflow-x: auto; } .kpi-value { font-size: 1.6rem; } }
+
+/* ── DRIVER SHARE ── */
+.driver-share { display: flex; height: 10px; border-radius: 6px; overflow: hidden; margin: 8px 0 4px; }
+.ds-calixto { background: #1e3a5f; }
+.ds-fernando { background: #2563eb; }
+.ds-leonardo { background: #60a5fa; }
+.ds-label { display: flex; gap: 12px; flex-wrap: wrap; }
+.ds-dot { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; color: var(--text2); }
+.ds-dot::before { content: ''; width: 8px; height: 8px; border-radius: 2px; }
+.dot-calixto::before { background: #1e3a5f; }
+.dot-fernando::before { background: #2563eb; }
+.dot-leonardo::before { background: #60a5fa; }
+
+/* ── MATRIX ── */
+.matrix th, .matrix td { text-align: center !important; }
+.matrix td:first-child { text-align: left !important; font-weight: 500; }
+.heat-0 { color: var(--text3); }
+.heat-1 { color: var(--text2); }
+.heat-2 { color: var(--accent); font-weight: 500; }
+.heat-3 { color: var(--navy); font-weight: 600; }
+.heat-4 { color: #1e3a5f; font-weight: 700; }
+
+/* ── FOOTER ── */
+.dash-footer { font-size: .7rem; color: var(--text3); text-align: center; margin-top: 32px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-top">
+    <div>
+      <h1>Sistema de Monitoreo de Entregas</h1>
+      <div class="header-sub">Reporte Consolidado · Pedidos, Operadores y Clientes</div>
+    </div>
+    <div class="period-badge">Jun – Oct 2026</div>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" onclick="switchTab(0)">1 · Control Operativo</button>
+    <button class="tab" onclick="switchTab(1)">2 · Desempeño por Chofer</button>
+    <button class="tab" onclick="switchTab(2)">3 · Tendencia Mensual</button>
+    <button class="tab" onclick="switchTab(3)">4 · Clientes y Recurrencia</button>
+  </nav>
+</header>
+
+<main class="main">
+
+<!-- ════════════════════════════════════════════
+     DASHBOARD 1 — CONTROL OPERATIVO
+════════════════════════════════════════════ -->
+<section class="dashboard active" id="d0">
+  <p class="dash-title">Dashboard 1 — Control Operativo de Entregas y Estatus <span>· Flujo total de pedidos y estado actual de carga de trabajo</span></p>
+
+  <div class="kpi-grid">
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Total de Pedidos</div>
+      <div class="kpi-value">319</div>
+      <div class="kpi-sub accent">Registros en la base de datos</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-label">Pedidos Finalizados / Entregados</div>
+      <div class="kpi-value">305</div>
+      <div class="kpi-sub"><strong>95.6% de cumplimiento</strong></div>
+    </div>
+    <div class="kpi kpi-amber">
+      <div class="kpi-label">En Proceso / Pendientes</div>
+      <div class="kpi-value">14</div>
+      <div class="kpi-sub amber"><strong>4.4%</strong> · Cargado, En Ruta, Programado</div>
+    </div>
+    <div class="kpi kpi-navy">
+      <div class="kpi-label">Tiendas Activas</div>
+      <div class="kpi-value">9</div>
+      <div class="kpi-sub accent"><strong>Puntos de origen</strong> de entregas</div>
+    </div>
+  </div>
+
+  <!-- Resumen por tienda -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Resumen por Tienda / Sucursal</span>
+      <span class="section-count">9 sucursales</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tienda / Sucursal</th>
+            <th>Total Tickets</th>
+            <th>Finalizados</th>
+            <th>Pendientes</th>
+            <th>% Total</th>
+            <th>Participación</th>
+            <th>Estatus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>PANEL NAVIDAD</strong></td><td class="mono">129</td><td class="mono">124</td><td class="mono">5</td><td class="pct">40.4%</td><td><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div></td><td><span class="badge badge-green">Activa</span></td></tr>
+          <tr><td><strong>PANEL CUAJIMALPA</strong></td><td class="mono">74</td><td class="mono">69</td><td class="mono">5</td><td class="pct">23.2%</td><td><div class="bar-track"><div class="bar-fill" style="width:57%"></div></div></td><td><span class="badge badge-green">Activa</span></td></tr>
+          <tr><td>TEKNO METEPEC</td><td class="mono">46</td><td class="mono">44</td><td class="mono">2</td><td class="pct">14.4%</td><td><div class="bar-track"><div class="bar-fill" style="width:36%"></div></div></td><td><span class="badge badge-green">Activa</span></td></tr>
+          <tr><td>TEKNO CUAJIMALPA</td><td class="mono">19</td><td class="mono">18</td><td class="mono">1</td><td class="pct">6.0%</td><td><div class="bar-track"><div class="bar-fill" style="width:15%"></div></div></td><td><span class="badge badge-amber">1 pendiente</span></td></tr>
+          <tr><td>FERREKASA</td><td class="mono">19</td><td class="mono">19</td><td class="mono">0</td><td class="pct">6.0%</td><td><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:15%"></div></div></td><td><span class="badge badge-green">Al día</span></td></tr>
+          <tr><td>BODEGA</td><td class="mono">13</td><td class="mono">12</td><td class="mono">1</td><td class="pct">4.1%</td><td><div class="bar-track"><div class="bar-fill" style="width:10%"></div></div></td><td><span class="badge badge-amber">1 pendiente</span></td></tr>
+          <tr><td>PLOMERÍA</td><td class="mono">13</td><td class="mono">13</td><td class="mono">0</td><td class="pct">4.1%</td><td><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:10%"></div></div></td><td><span class="badge badge-green">Al día</span></td></tr>
+          <tr><td>TEKNO INTERLOMAS</td><td class="mono">5</td><td class="mono">5</td><td class="mono">0</td><td class="pct">1.6%</td><td><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:4%"></div></div></td><td><span class="badge badge-green">Al día</span></td></tr>
+          <tr><td>TEKNO LEÓN</td><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td><td class="pct">0.3%</td><td><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:1%"></div></div></td><td><span class="badge badge-green">Al día</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pedidos activos -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Monitoreo de Pedidos Activos</span>
+      <span class="section-count">14 tickets en movimiento</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Estatus</th>
+            <th>Tienda</th>
+            <th>Cliente</th>
+            <th>Chofer Asignado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">TMV1752</td><td><span class="badge badge-blue">En Ruta</span></td><td>TEKNO METEPEC</td><td>Manuel López</td><td>Leonardo</td></tr>
+          <tr><td class="mono">TMV1748</td><td><span class="badge badge-blue">En Ruta</span></td><td>TEKNO METEPEC</td><td>Eduardo Medrano</td><td>Leonardo</td></tr>
+          <tr><td class="mono">PCVPCV11706</td><td><span class="badge badge-navy">Programado</span></td><td>PANEL CUAJIMALPA</td><td>Israel Muñoz</td><td>Calixto</td></tr>
+          <tr><td class="mono">PNV7922</td><td><span class="badge badge-navy">Programado</span></td><td>PANEL NAVIDAD</td><td>Nicolás Suárez</td><td>Fernando</td></tr>
+          <tr><td class="mono">PNV7889</td><td><span class="badge badge-navy">Programado</span></td><td>PANEL NAVIDAD</td><td>Arq. Mauricio</td><td>Fernando</td></tr>
+          <tr><td class="mono">PNV7975</td><td><span class="badge badge-amber">Cargado</span></td><td>PANEL NAVIDAD</td><td>Enttorno Residencia</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">PCVPCV11745</td><td><span class="badge badge-amber">Cargado</span></td><td>PANEL CUAJIMALPA</td><td>Cristian Alexis García</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">PNV769</td><td><span class="badge badge-amber">Cargado</span></td><td>PANEL NAVIDAD</td><td>Héctor</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">PNV7966</td><td><span class="badge badge-amber">Cargado</span></td><td>PANEL NAVIDAD</td><td>Raúl Hernández</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">PCV11740</td><td><span class="badge badge-amber">Cargado</span></td><td>PANEL CUAJIMALPA</td><td>Lucio Campos</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">PCV11718</td><td><span class="badge badge-amber">Cargado</span></td><td>PANEL CUAJIMALPA</td><td>Sra. Evelyn</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">TKVTVC1315</td><td><span class="badge badge-amber">Cargado</span></td><td>TEKNO CUAJIMALPA</td><td>Arq. Ricardo Aramburu</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">PCV10919</td><td><span class="badge badge-amber">Cargado</span></td><td>PANEL CUAJIMALPA</td><td>Desarrolladora Mederi</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+          <tr><td class="mono">BOVTB1023</td><td><span class="badge badge-red">En Proceso</span></td><td>BODEGA</td><td>Nilton Domínguez</td><td><span style="color:var(--text3)">Sin asignar</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     DASHBOARD 2 — DESEMPEÑO POR CHOFER
+════════════════════════════════════════════ -->
+<section class="dashboard" id="d1">
+  <p class="dash-title">Dashboard 2 — Desempeño y Carga de Trabajo por Chofer <span>· Productividad de operadores y tiempos de respuesta</span></p>
+
+  <div class="kpi-grid">
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Entregas Totales Asignadas</div>
+      <div class="kpi-value">310</div>
+      <div class="kpi-sub accent"><strong>9 sin asignar</strong> · en espera</div>
+    </div>
+    <div class="kpi kpi-navy">
+      <div class="kpi-label">Operador Principal</div>
+      <div class="kpi-value">Calixto</div>
+      <div class="kpi-sub accent"><strong>174 entregas · 54.5%</strong> de la carga</div>
+    </div>
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Fernando</div>
+      <div class="kpi-value">76</div>
+      <div class="kpi-sub accent"><strong>23.8%</strong> del total asignado</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-label">Leonardo</div>
+      <div class="kpi-value">60</div>
+      <div class="kpi-sub"><strong>18.8%</strong> del total asignado</div>
+    </div>
+  </div>
+
+  <!-- Distribución visual -->
+  <div class="section" style="padding:20px 22px 22px">
+    <div class="section-title" style="margin-bottom:12px">Distribución de Carga Operativa</div>
+    <div class="driver-share">
+      <div class="ds-calixto" style="width:54.5%"></div>
+      <div class="ds-fernando" style="width:23.8%"></div>
+      <div class="ds-leonardo" style="width:18.8%"></div>
+      <div style="flex:1;background:var(--border)"></div>
+    </div>
+    <div class="ds-label">
+      <span class="ds-dot dot-calixto">Calixto 54.5%</span>
+      <span class="ds-dot dot-fernando">Fernando 23.8%</span>
+      <span class="ds-dot dot-leonardo">Leonardo 18.8%</span>
+      <span class="ds-dot" style="opacity:.5">Sin asignar 2.8%</span>
+    </div>
+  </div>
+
+  <!-- Resumen operativo -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Resumen Operativo por Chofer</span>
+      <span class="section-count">3 operadores activos</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Chofer</th>
+            <th>Total Asignado</th>
+            <th>Finalizados</th>
+            <th>En Proceso</th>
+            <th>% Carga</th>
+            <th>Participación</th>
+            <th>Tiempo Prom. Entrega</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Calixto</strong></td>
+            <td class="mono">174</td>
+            <td class="mono">173</td>
+            <td class="mono">1</td>
+            <td class="pct">54.5%</td>
+            <td><div class="bar-track"><div class="bar-fill bar-fill-navy" style="width:100%"></div></div></td>
+            <td class="mono">26.1 hrs</td>
+          </tr>
+          <tr>
+            <td><strong>Fernando</strong></td>
+            <td class="mono">76</td>
+            <td class="mono">74</td>
+            <td class="mono">2</td>
+            <td class="pct">23.8%</td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:44%"></div></div></td>
+            <td class="mono">23.9 hrs</td>
+          </tr>
+          <tr>
+            <td><strong>Leonardo</strong></td>
+            <td class="mono">60</td>
+            <td class="mono">58</td>
+            <td class="mono">2</td>
+            <td class="pct">18.8%</td>
+            <td><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:34%"></div></div></td>
+            <td class="mono">15.8 hrs</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text3)">Sin Asignar</td>
+            <td class="mono" style="color:var(--text3)">9</td>
+            <td class="mono" style="color:var(--text3)">0</td>
+            <td class="mono" style="color:var(--text3)">9</td>
+            <td class="pct">2.8%</td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:5%;background:var(--red)"></div></div></td>
+            <td class="mono" style="color:var(--text3)">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Desglose mensual -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Desglose Mensual por Chofer</span>
+      <span class="section-count">Jun – Oct 2026</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>Total Pedidos</th>
+            <th>Calixto</th>
+            <th>Fernando</th>
+            <th>Leonardo</th>
+            <th>Sin Asignar</th>
+            <th>Finalizados</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Junio 2026</strong></td><td class="mono">52</td><td class="mono">34</td><td class="mono">15</td><td class="mono">3</td><td class="mono">0</td><td><span class="badge badge-green">52 / 52</span></td></tr>
+          <tr><td><strong>Julio 2026</strong></td><td class="mono">99</td><td class="mono">62</td><td class="mono">18</td><td class="mono">19</td><td class="mono">0</td><td><span class="badge badge-green">99 / 99</span></td></tr>
+          <tr><td><strong>Agosto 2026</strong></td><td class="mono">77</td><td class="mono">42</td><td class="mono">14</td><td class="mono">21</td><td class="mono">0</td><td><span class="badge badge-green">77 / 77</span></td></tr>
+          <tr><td><strong>Septiembre 2026</strong></td><td class="mono">50</td><td class="mono">21</td><td class="mono">16</td><td class="mono">12</td><td class="mono">1</td><td><span class="badge badge-green">49 / 50</span></td></tr>
+          <tr><td><strong>Octubre 2026</strong></td><td class="mono">41</td><td class="mono">15</td><td class="mono">13</td><td class="mono">5</td><td class="mono">8</td><td><span class="badge badge-amber">28 / 41 · en curso</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SLA -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Tiempos Promedio de Entrega (SLA)</span>
+      <span class="section-count">Desde creación hasta finalización</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Chofer</th>
+            <th>Entregas medidas</th>
+            <th>Tiempo Promedio</th>
+            <th>Más Rápido</th>
+            <th>Más Largo</th>
+            <th>Desempeño SLA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Leonardo</strong></td>
+            <td class="mono">58</td>
+            <td class="mono"><strong>15.8 hrs</strong></td>
+            <td class="mono">0.3 hrs</td>
+            <td class="mono">136.6 hrs</td>
+            <td><span class="badge badge-green">Más rápido</span></td>
+          </tr>
+          <tr>
+            <td><strong>Fernando</strong></td>
+            <td class="mono">74</td>
+            <td class="mono">23.9 hrs</td>
+            <td class="mono">0.6 hrs</td>
+            <td class="mono">140.5 hrs</td>
+            <td><span class="badge badge-blue">Bueno</span></td>
+          </tr>
+          <tr>
+            <td><strong>Calixto</strong></td>
+            <td class="mono">173</td>
+            <td class="mono">26.1 hrs</td>
+            <td class="mono">0.4 hrs</td>
+            <td class="mono">212.4 hrs</td>
+            <td><span class="badge badge-amber">Mayor volumen</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     DASHBOARD 3 — TENDENCIA MENSUAL
+════════════════════════════════════════════ -->
+<section class="dashboard" id="d2">
+  <p class="dash-title">Dashboard 3 — Comparativo Temporal y Tendencia Mensual <span>· Evolución del volumen y demanda por sucursal</span></p>
+
+  <div class="kpi-grid">
+    <div class="kpi kpi-navy">
+      <div class="kpi-label">Mes de Mayor Actividad</div>
+      <div class="kpi-value">Julio</div>
+      <div class="kpi-sub accent"><strong>99 pedidos</strong> · 31% del periodo</div>
+    </div>
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Segundo Mes Más Activo</div>
+      <div class="kpi-value">Agosto</div>
+      <div class="kpi-sub accent"><strong>77 pedidos</strong> · 24.1% del periodo</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-label">Promedio Mensual</div>
+      <div class="kpi-value">63.8</div>
+      <div class="kpi-sub"><strong>pedidos / mes</strong> en 5 meses</div>
+    </div>
+    <div class="kpi kpi-amber">
+      <div class="kpi-label">Octubre (en curso)</div>
+      <div class="kpi-value">41</div>
+      <div class="kpi-sub amber"><strong>28 finalizados</strong> · 13 pendientes</div>
+    </div>
+  </div>
+
+  <!-- Comparativo mensual -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Resumen Comparativo por Mes</span>
+      <span class="section-count">Jun – Oct 2026</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>Total Pedidos</th>
+            <th>Finalizados</th>
+            <th>% del Periodo</th>
+            <th>Calixto</th>
+            <th>Fernando</th>
+            <th>Leonardo</th>
+            <th>Volumen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Junio 2026</td>
+            <td class="mono">52</td>
+            <td class="mono">52</td>
+            <td class="pct">16.3%</td>
+            <td class="mono">34</td>
+            <td class="mono">15</td>
+            <td class="mono">3</td>
+            <td><div class="bar-track" style="min-width:120px"><div class="bar-fill bar-fill-navy" style="width:52%"></div></div></td>
+          </tr>
+          <tr>
+            <td><strong>Julio 2026</strong></td>
+            <td class="mono"><strong>99</strong></td>
+            <td class="mono">99</td>
+            <td class="pct"><strong>31.0%</strong></td>
+            <td class="mono">62</td>
+            <td class="mono">18</td>
+            <td class="mono">19</td>
+            <td><div class="bar-track" style="min-width:120px"><div class="bar-fill bar-fill-navy" style="width:100%"></div></div></td>
+          </tr>
+          <tr>
+            <td>Agosto 2026</td>
+            <td class="mono">77</td>
+            <td class="mono">77</td>
+            <td class="pct">24.1%</td>
+            <td class="mono">42</td>
+            <td class="mono">14</td>
+            <td class="mono">21</td>
+            <td><div class="bar-track" style="min-width:120px"><div class="bar-fill bar-fill-navy" style="width:78%"></div></div></td>
+          </tr>
+          <tr>
+            <td>Septiembre 2026</td>
+            <td class="mono">50</td>
+            <td class="mono">49</td>
+            <td class="pct">15.7%</td>
+            <td class="mono">21</td>
+            <td class="mono">16</td>
+            <td class="mono">12</td>
+            <td><div class="bar-track" style="min-width:120px"><div class="bar-fill bar-fill-navy" style="width:50%"></div></div></td>
+          </tr>
+          <tr>
+            <td>Octubre 2026 <span style="color:var(--amber);font-size:.7rem">en curso</span></td>
+            <td class="mono">41</td>
+            <td class="mono">28</td>
+            <td class="pct">12.9%</td>
+            <td class="mono">15</td>
+            <td class="mono">13</td>
+            <td class="mono">5</td>
+            <td><div class="bar-track" style="min-width:120px"><div class="bar-fill" style="width:41%;background:var(--amber)"></div></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Matriz tienda x mes -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Matriz Tienda vs. Mes</span>
+      <span class="section-count">Pedidos por sucursal y periodo</span>
+    </div>
+    <div class="table-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th style="text-align:left">Tienda / Sucursal</th>
+            <th>Jun 2026</th>
+            <th>Jul 2026</th>
+            <th>Ago 2026</th>
+            <th>Sep 2026</th>
+            <th>Oct 2026</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PANEL NAVIDAD</strong></td>
+            <td class="mono heat-2">22</td>
+            <td class="mono heat-4">44</td>
+            <td class="mono heat-3">27</td>
+            <td class="mono heat-2">18</td>
+            <td class="mono heat-2">18</td>
+            <td class="mono"><strong>129</strong></td>
+          </tr>
+          <tr>
+            <td><strong>PANEL CUAJIMALPA</strong></td>
+            <td class="mono heat-1">10</td>
+            <td class="mono heat-2">17</td>
+            <td class="mono heat-3">24</td>
+            <td class="mono heat-1">13</td>
+            <td class="mono heat-1">10</td>
+            <td class="mono"><strong>74</strong></td>
+          </tr>
+          <tr>
+            <td>TEKNO METEPEC</td>
+            <td class="mono heat-0">2</td>
+            <td class="mono heat-2">19</td>
+            <td class="mono heat-1">10</td>
+            <td class="mono heat-1">10</td>
+            <td class="mono heat-0">5</td>
+            <td class="mono">46</td>
+          </tr>
+          <tr>
+            <td>TEKNO CUAJIMALPA</td>
+            <td class="mono heat-0">5</td>
+            <td class="mono heat-0">4</td>
+            <td class="mono heat-0">3</td>
+            <td class="mono heat-0">4</td>
+            <td class="mono heat-0">3</td>
+            <td class="mono">19</td>
+          </tr>
+          <tr>
+            <td>FERREKASA</td>
+            <td class="mono heat-0">7</td>
+            <td class="mono heat-0">5</td>
+            <td class="mono heat-0">5</td>
+            <td class="mono heat-0">1</td>
+            <td class="mono heat-0">1</td>
+            <td class="mono">19</td>
+          </tr>
+          <tr>
+            <td>BODEGA</td>
+            <td class="mono heat-0">2</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono heat-0">5</td>
+            <td class="mono heat-0">3</td>
+            <td class="mono heat-0">3</td>
+            <td class="mono">13</td>
+          </tr>
+          <tr>
+            <td>PLOMERÍA</td>
+            <td class="mono heat-0">4</td>
+            <td class="mono heat-0">5</td>
+            <td class="mono heat-0">2</td>
+            <td class="mono heat-0">1</td>
+            <td class="mono heat-0">1</td>
+            <td class="mono">13</td>
+          </tr>
+          <tr>
+            <td>TEKNO INTERLOMAS</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono heat-0">4</td>
+            <td class="mono heat-0">1</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono">5</td>
+          </tr>
+          <tr>
+            <td>TEKNO LEÓN</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono heat-0">1</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono heat-0">0</td>
+            <td class="mono">1</td>
+          </tr>
+          <tr style="background:var(--surface2)">
+            <td><strong>TOTAL</strong></td>
+            <td class="mono"><strong>52</strong></td>
+            <td class="mono"><strong>99</strong></td>
+            <td class="mono"><strong>77</strong></td>
+            <td class="mono"><strong>50</strong></td>
+            <td class="mono"><strong>41</strong></td>
+            <td class="mono"><strong>319</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     DASHBOARD 4 — CLIENTES Y RECURRENCIA
+════════════════════════════════════════════ -->
+<section class="dashboard" id="d3">
+  <p class="dash-title">Dashboard 4 — Clientes y Análisis de Recurrencia <span>· Directorio, frecuencia de compra y fidelización</span></p>
+
+  <div class="kpi-grid">
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Clientes Únicos Registrados</div>
+      <div class="kpi-value">274</div>
+      <div class="kpi-sub accent">En toda la base de datos</div>
+    </div>
+    <div class="kpi kpi-navy">
+      <div class="kpi-label">Clientes Recurrentes (&gt;1 compra)</div>
+      <div class="kpi-value">32</div>
+      <div class="kpi-sub accent"><strong>11.7%</strong> de la cartera total</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-label">Clientes Única Compra</div>
+      <div class="kpi-value">242</div>
+      <div class="kpi-sub"><strong>88.3%</strong> de la cartera</div>
+    </div>
+    <div class="kpi kpi-amber">
+      <div class="kpi-label">Pedidos de Clientes Recurrentes</div>
+      <div class="kpi-value">77</div>
+      <div class="kpi-sub amber"><strong>24.1%</strong> del total de pedidos</div>
+    </div>
+  </div>
+
+  <!-- Top recurrentes -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Top Clientes Recurrentes</span>
+      <span class="section-count">32 clientes con &gt;1 compra</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Teléfono</th>
+            <th>Pedidos</th>
+            <th>Tienda de Preferencia</th>
+            <th>Último Pedido</th>
+            <th>Frecuencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono" style="color:var(--text3)">01</td><td><strong>Israel Rafael</strong></td><td class="mono">7121695787</td><td class="mono"><strong>5</strong></td><td>PANEL CUAJIMALPA</td><td class="mono">29/09/2026</td><td><span class="badge badge-navy">Alta</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">02</td><td><strong>Triseccion Ingeniería</strong></td><td class="mono">5529933518</td><td class="mono"><strong>5</strong></td><td>PANEL NAVIDAD</td><td class="mono">17/08/2026</td><td><span class="badge badge-navy">Alta</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">03</td><td><strong>La 73 Arquitectura</strong></td><td class="mono">5585921923</td><td class="mono"><strong>4</strong></td><td>PANEL CUAJIMALPA</td><td class="mono">12/10/2026</td><td><span class="badge badge-navy">Alta</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">04</td><td>Desarrolladora Mederi</td><td class="mono">5516558937</td><td class="mono">3</td><td>PANEL CUAJIMALPA</td><td class="mono">09/10/2026</td><td><span class="badge badge-blue">Media</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">05</td><td>Alejandro Urbano Paz</td><td class="mono">5529890174</td><td class="mono">3</td><td>PANEL NAVIDAD</td><td class="mono">07/10/2026</td><td><span class="badge badge-blue">Media</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">06</td><td>Victor Bernal</td><td class="mono">7221543885</td><td class="mono">3</td><td>TEKNO METEPEC</td><td class="mono">23/09/2026</td><td><span class="badge badge-blue">Media</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">07</td><td>Conrad Fleischmann</td><td class="mono">5611759765</td><td class="mono">3</td><td>PANEL NAVIDAD</td><td class="mono">02/07/2026</td><td><span class="badge badge-blue">Media</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">08</td><td>Daniela Glez</td><td class="mono">5610041406</td><td class="mono">3</td><td>PANEL NAVIDAD</td><td class="mono">29/06/2026</td><td><span class="badge badge-blue">Media</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">09</td><td>Héctor</td><td class="mono">5551988425</td><td class="mono">2</td><td>PANEL NAVIDAD</td><td class="mono">13/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">10</td><td>Sr. Carlos</td><td class="mono">5614021998</td><td class="mono">2</td><td>PANEL CUAJIMALPA</td><td class="mono">12/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">11</td><td>Eduardo Medrano</td><td class="mono">7221752362</td><td class="mono">2</td><td>TEKNO METEPEC</td><td class="mono">12/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">12</td><td>Nicolás Suárez</td><td class="mono">3314981740</td><td class="mono">2</td><td>PANEL NAVIDAD</td><td class="mono">09/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">13</td><td>Roberto Rodríguez</td><td class="mono">5525198012</td><td class="mono">2</td><td>PANEL CUAJIMALPA</td><td class="mono">08/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">14</td><td>Arq. Misael Vargas G.</td><td class="mono">5527391574</td><td class="mono">2</td><td>BODEGA</td><td class="mono">07/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">15</td><td>Constructora Corvsa</td><td class="mono">5564820928</td><td class="mono">2</td><td>PANEL NAVIDAD</td><td class="mono">03/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">16</td><td>Ricardo</td><td class="mono">5610924836</td><td class="mono">2</td><td>TEKNO CUAJIMALPA</td><td class="mono">02/10/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">17</td><td>Constructora Germer</td><td class="mono">5543834695</td><td class="mono">2</td><td>PANEL NAVIDAD</td><td class="mono">26/09/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr><td class="mono" style="color:var(--text3)">18</td><td>Jorge Salcedo</td><td class="mono">5634120025</td><td class="mono">2</td><td>PANEL NAVIDAD</td><td class="mono">01/09/2026</td><td><span class="badge badge-green">Baja</span></td></tr>
+          <tr>
+            <td colspan="7" style="text-align:center; padding:12px; color:var(--text3); font-size:.76rem">
+              + 14 clientes adicionales con 2 compras cada uno
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Lealtad por tienda -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Análisis de Lealtad por Tienda / Sucursal</span>
+      <span class="section-count">Retención de clientes por punto de venta</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tienda</th>
+            <th>Total Clientes</th>
+            <th>Clientes Recurrentes</th>
+            <th>% Retención</th>
+            <th>Pedidos de Recurrentes</th>
+            <th>Perfil</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PANEL NAVIDAD</strong></td>
+            <td class="mono">105</td>
+            <td class="mono">18</td>
+            <td class="pct"><strong>17.1%</strong></td>
+            <td class="mono">42</td>
+            <td><span class="badge badge-navy">Mayor retención</span></td>
+          </tr>
+          <tr>
+            <td><strong>PANEL CUAJIMALPA</strong></td>
+            <td class="mono">62</td>
+            <td class="mono">6</td>
+            <td class="pct">9.7%</td>
+            <td class="mono">18</td>
+            <td><span class="badge badge-blue">Desarrolladoras</span></td>
+          </tr>
+          <tr>
+            <td>TEKNO METEPEC</td>
+            <td class="mono">40</td>
+            <td class="mono">5</td>
+            <td class="pct">12.5%</td>
+            <td class="mono">11</td>
+            <td><span class="badge badge-blue">Constructores</span></td>
+          </tr>
+          <tr>
+            <td>BODEGA</td>
+            <td class="mono">12</td>
+            <td class="mono">2</td>
+            <td class="pct">16.7%</td>
+            <td class="mono">4</td>
+            <td><span class="badge badge-green">Buen ratio</span></td>
+          </tr>
+          <tr>
+            <td>TEKNO CUAJIMALPA</td>
+            <td class="mono">18</td>
+            <td class="mono">1</td>
+            <td class="pct">5.6%</td>
+            <td class="mono">2</td>
+            <td><span class="badge badge-amber">Oportunidad</span></td>
+          </tr>
+          <tr>
+            <td>FERREKASA</td>
+            <td class="mono">19</td>
+            <td class="mono">1</td>
+            <td class="pct">5.3%</td>
+            <td class="mono">2</td>
+            <td><span class="badge badge-amber">Oportunidad</span></td>
+          </tr>
+          <tr>
+            <td>PLOMERÍA</td>
+            <td class="mono">13</td>
+            <td class="mono">0</td>
+            <td class="pct">0%</td>
+            <td class="mono">0</td>
+            <td><span class="badge badge-red">Sin recurrencia</span></td>
+          </tr>
+          <tr>
+            <td>TEKNO INTERLOMAS</td>
+            <td class="mono">5</td>
+            <td class="mono">0</td>
+            <td class="pct">0%</td>
+            <td class="mono">0</td>
+            <td><span class="badge badge-red">Sin recurrencia</span></td>
+          </tr>
+          <tr>
+            <td>TEKNO LEÓN</td>
+            <td class="mono">1</td>
+            <td class="mono">0</td>
+            <td class="pct">0%</td>
+            <td class="mono">0</td>
+            <td><span class="badge badge-red">Sin recurrencia</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="dash-footer">
+  Generado automáticamente · Base de datos: 319 pedidos · Jun – Oct 2026<br>
+  Cálculos basados en Fechas de Creación y Finalización registradas en el sistema.
+</div>
+
+</main>
+
+<script>
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.dashboard').forEach((d,i) => d.classList.toggle('active', i===idx));
+}
+</script>
+</body>
+</html>
